@@ -13,7 +13,7 @@ The repository now contains the TypeScript foundation, channel/thread project bi
 - `0005-opencode-run-new.md` — Shared OpenCode V2 client/session boundary and global `/run new` interaction path with selected-run attachment (`3839fba`).
 - `0006-discord-message-forwarding.md` — Shared-client `session.prompt` boundary and channel/thread-scoped normal-message forwarding (`11bcc5c`).
 - `0007-global-event-consumer.md` — One shared-client OpenCode event subscription with context-preserving event handling and safe failure behavior (`448297f`).
-- `0008-run-indexing-event-reducer.md` — Explicit run/session indexing and payload-free semantic event reduction.
+- `0008-run-indexing-event-reducer.md` — Explicit run/session indexing and payload-free semantic event reduction (`da97f8d`).
 
 ## Active slice
 
