@@ -4,18 +4,25 @@ import {
   OpenCodeError,
   createOpenCodeClient,
   createSession,
+  promptSession,
 } from "./client.js";
 
 function stubClient(overrides?: {
   create?: (input: {
     readonly location: { readonly directory: string };
   }) => Promise<{ readonly id: string }>;
+  prompt?: (input: {
+    readonly sessionID: string;
+    readonly text: string;
+  }) => Promise<unknown>;
 }) {
   return {
     session: {
       create:
         overrides?.create ??
         (async () => ({ id: "ses_123" }) as const),
+      prompt:
+        overrides?.prompt ?? (async () => ({}) as const),
     },
   };
 }
@@ -136,5 +143,91 @@ describe("createSession", () => {
       // @ts-expect-error - intentionally invalid client
       createSession({}, "/proj/voxel"),
     ).rejects.toThrow("session support is required");
+  });
+});
+
+describe("promptSession", () => {
+  it("prompts with the OpenCode V2 sessionID/text payload", async () => {
+    const prompt = vi.fn().mockResolvedValue({});
+    await promptSession(stubClient({ prompt }), "ses_abc", "hello world");
+
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith({
+      sessionID: "ses_abc",
+      text: "hello world",
+    });
+  });
+
+  it("trims the session ID and text before prompting", async () => {
+    const prompt = vi.fn().mockResolvedValue({});
+    await promptSession(stubClient({ prompt }), "  ses_abc  ", "  hello  ");
+
+    expect(prompt).toHaveBeenCalledTimes(1);
+    expect(prompt).toHaveBeenCalledWith({
+      sessionID: "ses_abc",
+      text: "hello",
+    });
+  });
+
+  it("prompts independent sessions through the same shared client", async () => {
+    const prompt = vi.fn().mockResolvedValue({});
+    const client = stubClient({ prompt });
+
+    await promptSession(client, "ses_one", "first message");
+    await promptSession(client, "ses_two", "second message");
+
+    expect(prompt).toHaveBeenCalledTimes(2);
+    expect(prompt).toHaveBeenNthCalledWith(1, {
+      sessionID: "ses_one",
+      text: "first message",
+    });
+    expect(prompt).toHaveBeenNthCalledWith(2, {
+      sessionID: "ses_two",
+      text: "second message",
+    });
+  });
+
+  it("rejects empty session IDs and text without calling the API", async () => {
+    const prompt = vi.fn();
+    for (const sessionId of ["", "   "]) {
+      await expect(
+        promptSession(stubClient({ prompt }), sessionId, "hello"),
+      ).rejects.toThrow("Session ID must not be empty");
+    }
+    for (const text of ["", "   "]) {
+      await expect(
+        promptSession(stubClient({ prompt }), "ses_abc", text),
+      ).rejects.toThrow("Prompt text must not be empty");
+    }
+    expect(prompt).not.toHaveBeenCalled();
+  });
+
+  it("rejects unusable clients without calling the API", async () => {
+    await expect(
+      // @ts-expect-error - intentionally invalid client
+      promptSession(null, "ses_abc", "hello"),
+    ).rejects.toThrow("session support is required");
+    await expect(
+      // @ts-expect-error - intentionally invalid client
+      promptSession({}, "ses_abc", "hello"),
+    ).rejects.toThrow("session support is required");
+  });
+
+  it("wraps transport/API failures without leaking prompt text", async () => {
+    const secretText = "super-secret-prompt-body-12345";
+    const failure = new Error("connection refused");
+    const prompt = vi.fn().mockRejectedValue(failure);
+
+    const error = await promptSession(
+      stubClient({ prompt }),
+      "ses_abc",
+      secretText,
+    ).catch((error: unknown) => error);
+
+    expect(error).toBeInstanceOf(OpenCodeError);
+    expect((error as Error).message).toContain("ses_abc");
+    expect((error as Error).message).not.toContain(secretText);
+    expect((error as { cause?: unknown }).cause).toBe(failure);
+    expect(prompt).toHaveBeenCalledTimes(1);
   });
 });

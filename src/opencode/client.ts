@@ -30,6 +30,10 @@ export interface SessionCapableClient {
     create(input: {
       readonly location: { readonly directory: string };
     }): Promise<{ readonly id: string }>;
+    prompt?(input: {
+      readonly sessionID: string;
+      readonly text: string;
+    }): Promise<unknown>;
   };
 }
 
@@ -122,6 +126,48 @@ export async function createSession(
     );
   }
   return { sessionId };
+}
+
+/**
+ * Prompt an existing root OpenCode session with message text.
+ *
+ * Uses the shared client — never a per-channel client — and OpenCode V2
+ * `session.prompt({ sessionID, text })` semantics so one backend can serve
+ * many projects and runs. Trims both inputs and throws {@link OpenCodeError}
+ * for an empty session ID, empty text, a missing session surface, or a
+ * transport/API failure. Failure messages carry the session ID for routing
+ * context but never echo the prompt text.
+ */
+export async function promptSession(
+  client: SessionCapableClient,
+  sessionId: string,
+  text: string,
+): Promise<void> {
+  const prompt = client?.session?.prompt;
+  if (typeof prompt !== "function") {
+    throw new OpenCodeError("An OpenCode client with session support is required");
+  }
+  const trimmedSessionId =
+    typeof sessionId === "string" ? sessionId.trim() : "";
+  if (!trimmedSessionId) {
+    throw new OpenCodeError("Session ID must not be empty");
+  }
+  const trimmedText = typeof text === "string" ? text.trim() : "";
+  if (!trimmedText) {
+    throw new OpenCodeError("Prompt text must not be empty");
+  }
+
+  try {
+    await prompt({
+      sessionID: trimmedSessionId,
+      text: trimmedText,
+    });
+  } catch (error) {
+    throw new OpenCodeError(
+      `Could not prompt OpenCode session "${trimmedSessionId}".`,
+      { cause: error },
+    );
+  }
 }
 
 function isHttpUrl(value: string): boolean {
