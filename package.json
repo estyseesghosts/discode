@@ -8,10 +8,13 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "start": "tsx --env-file=.env src/index.ts",
+    "register-commands": "tsx --env-file=.env src/register-commands.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.2"
   },
