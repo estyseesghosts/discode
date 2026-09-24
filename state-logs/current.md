@@ -8,7 +8,7 @@ The repository now contains the first runnable TypeScript foundation for the Dis
 
 - `0001-repository-foundation.md` — Git, documentation, OpenCode configuration, and helper-agent structure.
 - `0002-agent-permissions.md` — Explicitly granted implementation capabilities and enforced read-only helpers.
-- `0003-typescript-foundation.md` — Node/TypeScript setup, configuration validation, binding-store types, transitions, and focused tests.
+- `0003-typescript-foundation.md` — Node/TypeScript setup, configuration validation, binding-store types, transitions, and focused tests (`15ce311`).
 
 ## Active slice
 
