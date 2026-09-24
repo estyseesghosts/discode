@@ -28,13 +28,22 @@ const sessionEvent = {
 } as const;
 
 describe("consumeOpenCodeEvents", () => {
-  it("subscribes to the shared event stream exactly once", async () => {
-    const subscribe = vi.fn().mockReturnValue(toStream([]));
+  it("subscribes synchronously before the consumption promise settles", async () => {
+    const subscribe = vi.fn().mockReturnValue(toStream([sessionEvent]));
     const handler = vi.fn();
 
-    await consumeOpenCodeEvents(stubClient(subscribe), handler);
+    const pending = consumeOpenCodeEvents(stubClient(subscribe), handler);
 
+    expect(pending).toBeInstanceOf(Promise);
     expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(handler).not.toHaveBeenCalled();
+
+    await expect(pending).resolves.toEqual({
+      eventsReceived: 1,
+      handlerFailures: 0,
+      completed: true,
+    });
+    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it("forwards the abort signal to the single subscription", async () => {
@@ -141,20 +150,23 @@ describe("consumeOpenCodeEvents", () => {
     expect(seen).toHaveLength(1);
   });
 
-  it("wraps subscription failures without calling the handler", async () => {
+  it("throws subscription failures synchronously without calling the handler", () => {
     const failure = new Error("server unavailable");
     const subscribe = vi.fn().mockImplementation(() => {
       throw failure;
     });
     const handler = vi.fn();
 
-    const error = await consumeOpenCodeEvents(
-      stubClient(subscribe),
-      handler,
-    ).catch((error: unknown) => error);
+    let error: unknown;
+    try {
+      consumeOpenCodeEvents(stubClient(subscribe), handler);
+    } catch (caught: unknown) {
+      error = caught;
+    }
 
     expect(error).toBeInstanceOf(OpenCodeError);
     expect((error as Error).message).toContain("subscribe");
+    expect((error as Error).message).not.toContain("server unavailable");
     expect((error as { cause?: unknown }).cause).toBe(failure);
     expect(handler).not.toHaveBeenCalled();
   });
@@ -184,23 +196,23 @@ describe("consumeOpenCodeEvents", () => {
     });
   });
 
-  it("rejects unusable clients and handlers without subscribing", async () => {
+  it("throws for unusable clients and handlers without subscribing", () => {
     const subscribe = vi.fn();
-    await expect(
+    expect(() =>
       // @ts-expect-error - intentionally invalid client
       consumeOpenCodeEvents(null, vi.fn()),
-    ).rejects.toThrow("event support is required");
-    await expect(
+    ).toThrow("event support is required");
+    expect(() =>
       // @ts-expect-error - intentionally invalid client
       consumeOpenCodeEvents({}, vi.fn()),
-    ).rejects.toThrow("event support is required");
-    await expect(
+    ).toThrow("event support is required");
+    expect(() =>
       consumeOpenCodeEvents(
         stubClient(subscribe),
         // @ts-expect-error - intentionally invalid handler
         null,
       ),
-    ).rejects.toThrow("event handler is required");
+    ).toThrow("event handler is required");
     expect(subscribe).not.toHaveBeenCalled();
   });
 });

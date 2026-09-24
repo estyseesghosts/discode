@@ -138,16 +138,22 @@ export function eventDirectory(
  * event — untouched, preserving location/session context — to `handler`.
  * Never creates per-channel listeners or clients.
  *
+ * Startup handshake is synchronous: client/handler validation and the
+ * `subscribe()` call itself happen before the returned promise is created,
+ * so a subscription failure throws {@link OpenCodeError} synchronously and
+ * callers such as `AppRuntime.start()` can clean up before logging into
+ * Discord. The returned promise covers stream consumption only:
+ *
  * - Stream completion: resolves with an {@link EventConsumerResult} summary.
  * - Handler failure: isolated per event; the failure is counted and the
  *   stream continues. The handler's error is swallowed so event payloads
  *   cannot leak through rejection reasons.
- * - Subscription failure (`subscribe()` itself throws) or stream failure
- *   (the iterable throws mid-consumption): throws {@link OpenCodeError}
- *   with a count-only message and the original cause. Reconnection policy
- *   belongs to the (future) bot wiring, not this boundary.
+ * - Stream failure (the iterable throws mid-consumption): the returned
+ *   promise rejects with {@link OpenCodeError} carrying a count-only message
+ *   and the original cause. Reconnection policy belongs to the (future) bot
+ *   wiring, not this boundary.
  */
-export async function consumeOpenCodeEvents(
+export function consumeOpenCodeEvents(
   client: EventCapableClient,
   handler: OpenCodeEventHandler,
   options?: EventConsumerOptions,
@@ -175,6 +181,17 @@ export async function consumeOpenCodeEvents(
     throw new OpenCodeError("Could not subscribe to OpenCode events.");
   }
 
+  return consumeStream(stream, handler);
+}
+
+/**
+ * Consume an established event stream. Returned-promise boundary only:
+ * setup failures never reach here (they throw synchronously above).
+ */
+async function consumeStream(
+  stream: AsyncIterable<OpenCodeEvent>,
+  handler: OpenCodeEventHandler,
+): Promise<EventConsumerResult> {
   let eventsReceived = 0;
   let handlerFailures = 0;
   try {

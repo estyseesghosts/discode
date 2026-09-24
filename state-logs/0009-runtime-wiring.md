@@ -1,0 +1,17 @@
+# 0009 — Runtime wiring boundary
+
+- **Slice:** Compose the shared OpenCode client, Discord gateway, binding store, run registry, and global event consumer into one testable runtime.
+- **Acceptance criteria:**
+  - Provide a runtime composition boundary that owns one `BindingStore`, one `RunRegistry`, and one shared OpenCode client created from validated configuration.
+  - Register newly created root sessions in the run registry before selecting them in the binding store.
+  - Route Discord `interactionCreate` events to `/project attach` and `/run new`, and `messageCreate` events to the existing forwarding boundary.
+  - Start exactly one global OpenCode event consumer whose handler feeds events into the run registry reducer.
+  - Keep event-consumer startup, Discord login, and stream completion observable/testable without real network or hard-coded runtime IDs.
+  - Add focused tests for single-client composition, command/message routing, run registration, event reduction, startup state, and failure isolation.
+  - Do not add status messages, persistence, automatic discovery, reconnect/backoff, or a process-level `index.ts` entrypoint yet.
+- **Context:** Starting from `da97f8d` plus handoff commit `7914d0f`, all first-milestone boundaries exist independently. The next step is to wire them without creating per-channel clients/listeners or changing their behavior.
+- **Changes:** Added `src/runtime/app.ts` and focused tests for the composition root: one shared OpenCode client, one binding store, one run registry, one interaction listener, one message listener, and one event consumer. Added `src/discord/client.ts` as a side-effect-free production Discord gateway factory with the required intents and compile-time gateway compatibility. Extended `/run new` with a structural run registrar and register-before-select ordering. Made event subscription setup synchronous so startup failures clean up before Discord login; event-stream failures are observed without an unhandled rejection window; failed login/subscription attempts remove listeners, abort the consumer, reset startup state, and permit retry.
+- **Verification:** `npm test` passed: 11 files, 150 tests. `npm run typecheck` passed. `git diff --check` passed. No lint or build scripts are defined yet.
+- **Decisions:** Keep the runtime composition injectable and side-effect-free at construction. Use the existing structural Discord handler boundaries rather than importing concrete discord.js interaction types. Register a new root in `RunRegistry` before `BindingStore.attachRun`. Make event subscription setup synchronous while leaving stream consumption asynchronous. Observe the consumer rejection internally while preserving the public rejected promise. Keep live process startup and command registration in the next slice.
+- **Risks / follow-ups:** The runtime is not yet runnable from a process entrypoint. A successful login can still be followed later by a terminal event-stream failure; reconnect/backoff remains deferred. Gateway-level failures are isolated but not yet logged. In-memory bindings and runs are lost on restart. A failed run registration/store update can orphan a successfully created OpenCode session. The next concrete slice is a process bootstrap plus explicit command-registration entrypoint, with `.env` validation and a live-smoke checklist. Keep status messages, persistence, discovery, and reconnect/backoff out of scope.
+- **Commit:** `slice: add runtime composition and startup wiring` (metadata updated after commit).

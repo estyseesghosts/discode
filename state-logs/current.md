@@ -2,7 +2,7 @@
 
 ## Current baseline
 
-The repository now contains the TypeScript foundation, channel/thread project binding, global `/project attach`, shared OpenCode client boundary, global `/run new`, normal-message forwarding, one global OpenCode event consumer, and an in-memory run registry plus semantic event reducer.
+The repository now contains the TypeScript foundation, channel/thread project binding, global `/project attach`, shared OpenCode client boundary, global `/run new`, normal-message forwarding, one global OpenCode event consumer, run indexing/semantic reduction, and a tested runtime composition/startup boundary.
 
 ## Completed slices
 
@@ -14,11 +14,12 @@ The repository now contains the TypeScript foundation, channel/thread project bi
 - `0006-discord-message-forwarding.md` — Shared-client `session.prompt` boundary and channel/thread-scoped normal-message forwarding (`11bcc5c`).
 - `0007-global-event-consumer.md` — One shared-client OpenCode event subscription with context-preserving event handling and safe failure behavior (`448297f`).
 - `0008-run-indexing-event-reducer.md` — Explicit run/session indexing and payload-free semantic event reduction (`da97f8d`).
+- `0009-runtime-wiring.md` — One-client/store/registry runtime composition, Discord routing, global event-consumer startup, and safe startup retry behavior.
 
 ## Active slice
 
-None. Slice 0008 is complete.
+None. Slice 0009 is complete.
 
 ## Next slice
 
-Implement a single runtime wiring boundary: construct one shared OpenCode client from validated config, register newly created sessions in the run registry, route Discord commands/messages through the shared state, and start the one global event consumer. Keep status messages, persistence, and automatic discovery out of scope.
+Add the process bootstrap and explicit command-registration entrypoint needed for a live bot-account smoke test: load validated environment configuration, create the real Discord gateway, register commands through an explicit deployment path, start the runtime, and expose a safe top-level failure/log boundary. Keep status messages, persistence, discovery, and reconnect/backoff out of scope.

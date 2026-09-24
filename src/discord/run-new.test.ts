@@ -179,6 +179,68 @@ describe("handleRunNew", () => {
       "Unknown interaction",
     );
   });
+
+  it("registers the new root before selecting it when a registrar is supplied", async () => {
+    const store = new BindingStore();
+    store.attachProject("channel-a", "/home/user/alpha");
+    const client = mockClient({ sessionId: "ses_1234" });
+    const events: string[] = [];
+    const registrar = {
+      registerRoot: vi.fn().mockImplementation(() => {
+        events.push("register");
+        return undefined;
+      }),
+    };
+    vi.spyOn(store, "attachRun").mockImplementation((channelId, runId) => {
+      events.push("attach");
+      return BindingStore.prototype.attachRun.call(store, channelId, runId);
+    });
+
+    const outcome = await handleRunNew(
+      mockInteraction({ channelId: "channel-a" }),
+      store,
+      client,
+      registrar,
+    );
+
+    expect(outcome).toBe("handled");
+    expect(registrar.registerRoot).toHaveBeenCalledTimes(1);
+    expect(registrar.registerRoot).toHaveBeenCalledWith({
+      rootSessionId: "ses_1234",
+      projectDirectory: "/home/user/alpha",
+    });
+    expect(events).toEqual(["register", "attach"]);
+    expect(store.get("channel-a")?.activeRunId).toBe("ses_1234");
+  });
+
+  it("uses the safe selection-failure reply when registration fails", async () => {
+    const store = new BindingStore();
+    store.attachProject("channel-a", "/home/user/alpha");
+    const client = mockClient({ sessionId: "ses_1234" });
+    const attachRun = vi.spyOn(store, "attachRun");
+    const registrar = {
+      registerRoot: vi.fn().mockImplementation(() => {
+        throw new Error("registry exploded: secret-shard-9");
+      }),
+    };
+    const interaction = mockInteraction({ channelId: "channel-a" });
+
+    const outcome = await handleRunNew(
+      interaction,
+      store,
+      client,
+      registrar,
+    );
+
+    expect(outcome).toBe("handled");
+    expect(attachRun).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledTimes(1);
+    const payload = vi.mocked(interaction.reply).mock.calls[0]?.[0];
+    expect(payload).toMatchObject({ ephemeral: true });
+    expect(payload?.content).toContain("could not select it");
+    expect(payload?.content).not.toContain("secret-shard-9");
+    expect(store.get("channel-a")?.activeRunId).toBeUndefined();
+  });
 });
 
 function mockClient(input: { sessionId: string }): SessionCapableClient & {

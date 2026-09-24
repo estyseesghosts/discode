@@ -41,6 +41,21 @@ type _RealInteractionFits = AssertTrue<
 >;
 
 /**
+ * Structural registrar for newly created root sessions.
+ *
+ * Satisfied by `RunRegistry` (whose `registerRoot` takes
+ * `{ rootSessionId, projectDirectory }`); declared structurally here so the
+ * Discord boundary stays independent of the runtime module. The runtime
+ * passes its single shared registry; tests inject a spy.
+ */
+export interface RunRegistrar {
+  registerRoot(input: {
+    readonly rootSessionId: string;
+    readonly projectDirectory: string;
+  }): unknown;
+}
+
+/**
  * Handle a `/run new` interaction.
  *
  * Returns `"unhandled"` (without replying and without calling OpenCode) when
@@ -48,14 +63,19 @@ type _RealInteractionFits = AssertTrue<
  * exactly one reply, returning `"handled"`: an ephemeral message for missing
  * channel context, an unbound channel, or OpenCode/store failures; or a
  * public success message containing the new root session ID. The shared
- * client is called exactly once per handled, bound interaction. OpenCode and
- * store failure details are never echoed. Reply failures propagate to the
- * caller.
+ * client is called exactly once per handled, bound interaction. When
+ * `runRegistrar` is supplied, the new root session is registered there
+ * (e.g. the runtime's shared `RunRegistry`) after OpenCode creation but
+ * before channel selection; registration failures use the same safe
+ * ephemeral selection-failure reply as store failures and never echo
+ * details. OpenCode, registration, and store failure details are never
+ * echoed. Reply failures propagate to the caller.
  */
 export async function handleRunNew(
   interaction: RunNewInteraction,
   store: BindingStore,
   sharedClient: SessionCapableClient,
+  runRegistrar?: RunRegistrar | null,
 ): Promise<InteractionOutcome> {
   if (!interaction || !store || !sharedClient) {
     throw new Error(
@@ -110,6 +130,20 @@ export async function handleRunNew(
     await interaction.reply({
       content:
         "Could not start a new run for this channel's project. Please try again.",
+      ephemeral: true,
+    });
+    return "handled";
+  }
+
+  try {
+    await runRegistrar?.registerRoot({
+      rootSessionId: sessionId,
+      projectDirectory: binding.project.directory,
+    });
+  } catch {
+    await interaction.reply({
+      content:
+        "The run started, but this channel could not select it. Please try again.",
       ephemeral: true,
     });
     return "handled";
