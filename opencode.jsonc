@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "orchestrator",
+  "formatter": true,
+  "compaction": {
+    "auto": true,
+    "keep": {
+      "tokens": 15000
+    }
+  }
+}
