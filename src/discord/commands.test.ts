@@ -5,14 +5,12 @@ import {
   createDiscordRest,
   projectCommand,
   registerProjectCommands,
+  runCommand,
 } from "./commands.js";
 
 describe("project command definition", () => {
   it("defines a global /project attach command with a required directory option", () => {
-    const payload = buildCommandPayload();
-    expect(payload).toHaveLength(1);
-
-    const command = payload[0] as {
+    const command = commandByName("project") as {
       name: string;
       description: string;
       options: Array<{
@@ -35,12 +33,49 @@ describe("project command definition", () => {
     });
   });
 
-  it("exposes the builder without hard-coded runtime IDs", () => {
-    const json = JSON.stringify(projectCommand.toJSON());
-    expect(json).not.toMatch(/[0-9]{17,}/); // no Discord snowflake IDs
-    expect(json).not.toContain("ses_");
+  it("defines a global /run new command without options", () => {
+    const command = commandByName("run") as {
+      name: string;
+      options: Array<{
+        type: number;
+        name: string;
+        options?: unknown[];
+      }>;
+    };
+    expect(command.name).toBe("run");
+    expect(command.options).toHaveLength(1);
+    expect(command.options[0]?.type).toBe(1); // SUB_COMMAND
+    expect(command.options[0]?.name).toBe("new");
+    expect(command.options[0]?.options ?? []).toHaveLength(0);
+  });
+
+  it("registers both commands in one global payload", () => {
+    const payload = buildCommandPayload();
+    expect(payload).toHaveLength(2);
+    expect(names(payload)).toEqual(["project", "run"]);
+  });
+
+  it("exposes the builders without hard-coded runtime IDs", () => {
+    for (const command of [projectCommand, runCommand]) {
+      const json = JSON.stringify(command.toJSON());
+      expect(json).not.toMatch(/[0-9]{17,}/); // no Discord snowflake IDs
+      expect(json).not.toContain("ses_");
+    }
   });
 });
+
+function commandByName(name: string): unknown {
+  const payload = buildCommandPayload() as Array<{ name: string }>;
+  const command = payload.find((entry) => entry.name === name);
+  if (!command) {
+    throw new Error(`Expected a ${name} command in the payload`);
+  }
+  return command;
+}
+
+function names(payload: unknown[]): string[] {
+  return (payload as Array<{ name: string }>).map((entry) => entry.name);
+}
 
 describe("registerProjectCommands", () => {
   it("registers the payload against the global application route", async () => {

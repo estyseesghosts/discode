@@ -1,12 +1,12 @@
 import { REST, Routes, SlashCommandBuilder } from "discord.js";
 
 /**
- * Global `/project attach` command definition.
+ * Global `/project attach` and `/run new` command definitions.
  *
- * This module defines the command shape and exposes an explicit registration
+ * This module defines the command shapes and exposes an explicit registration
  * function. Importing it has no side effects: nothing is sent to Discord and
- * no client or listener is created. All runtime context (channel, directory)
- * is resolved later from the invoking interaction.
+ * no client or listener is created. All runtime context (channel, directory,
+ * run selection) is resolved later from the invoking interaction.
  */
 export const projectCommand = new SlashCommandBuilder()
   .setName("project")
@@ -23,9 +23,18 @@ export const projectCommand = new SlashCommandBuilder()
       ),
   );
 
+export const runCommand = new SlashCommandBuilder()
+  .setName("run")
+  .setDescription("Manage this channel's active OpenCode run")
+  .addSubcommand((command) =>
+    command
+      .setName("new")
+      .setDescription("Start a fresh OpenCode root session"),
+  );
+
 /** Serializable command payload for Discord application-command registration. */
 export function buildCommandPayload(): unknown[] {
-  return [projectCommand.toJSON()];
+  return [projectCommand.toJSON(), runCommand.toJSON()];
 }
 
 /**
