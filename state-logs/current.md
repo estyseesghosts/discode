@@ -2,7 +2,7 @@
 
 ## Current baseline
 
-The repository now contains the TypeScript foundation, channel/thread project binding, global `/project attach`, shared OpenCode client boundary, global `/run new`, normal-message forwarding, and one global OpenCode event consumer.
+The repository now contains the TypeScript foundation, channel/thread project binding, global `/project attach`, shared OpenCode client boundary, global `/run new`, normal-message forwarding, one global OpenCode event consumer, and an in-memory run registry plus semantic event reducer.
 
 ## Completed slices
 
@@ -13,11 +13,12 @@ The repository now contains the TypeScript foundation, channel/thread project bi
 - `0005-opencode-run-new.md` — Shared OpenCode V2 client/session boundary and global `/run new` interaction path with selected-run attachment (`3839fba`).
 - `0006-discord-message-forwarding.md` — Shared-client `session.prompt` boundary and channel/thread-scoped normal-message forwarding (`11bcc5c`).
 - `0007-global-event-consumer.md` — One shared-client OpenCode event subscription with context-preserving event handling and safe failure behavior (`448297f`).
+- `0008-run-indexing-event-reducer.md` — Explicit run/session indexing and payload-free semantic event reduction.
 
 ## Active slice
 
-None. Slice 0007 is complete.
+None. Slice 0008 is complete.
 
 ## Next slice
 
-Implement session/run indexing plus a minimal semantic event reducer: represent root OpenCode sessions as runtime runs, map event session/location context into those runs, and expose deterministic reducer state without Discord status updates. Keep persistence, automatic discovery, and live startup wiring out of scope.
+Implement a single runtime wiring boundary: construct one shared OpenCode client from validated config, register newly created sessions in the run registry, route Discord commands/messages through the shared state, and start the one global event consumer. Keep status messages, persistence, and automatic discovery out of scope.
