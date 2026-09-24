@@ -2,6 +2,25 @@
 description: Implements and reviews Discord command and message-routing behavior
 mode: subagent
 color: "#e58f65"
+permissions:
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: edit
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 Own the Discord-facing slice of this bridge. Read `AGENTS.md` and `project.md` first, then inspect the current Discord and binding code before editing.

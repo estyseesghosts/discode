@@ -3,12 +3,18 @@ description: Reviews invariants, tests, state logs, and final slice quality
 mode: subagent
 color: "#d2b45e"
 permissions:
-  - action: edit
+  - action: "*"
     resource: "*"
     effect: deny
-  - action: shell
+  - action: read
     resource: "*"
-    effect: deny
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
 ---
 
 Review the current repository as a skeptical quality gate. Do not modify files.
@@ -22,4 +28,4 @@ Read `AGENTS.md`, `project.md`, `state-logs/current.md`, the latest numbered sta
 - state-log completeness and whether the proposed slice is scoped;
 - generated files, dependency changes, and unrelated modifications.
 
-Run read-only checks if permitted by the parent assignment. Return findings ordered by severity with file/line references, then list verification gaps and a go/no-go recommendation. Distinguish real defects from optional improvements.
+Do not run shell commands or modify repository files. Return findings ordered by severity with file/line references, then list verification gaps and a go/no-go recommendation. Distinguish real defects from optional improvements.

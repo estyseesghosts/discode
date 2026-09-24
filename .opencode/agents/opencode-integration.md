@@ -2,6 +2,25 @@
 description: Implements the shared OpenCode client and event pipeline
 mode: subagent
 color: "#65b995"
+permissions:
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: edit
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: allow
+  - action: subagent
+    resource: "*"
+    effect: deny
 ---
 
 Own the OpenCode-facing slice of this bridge. Read `AGENTS.md` and `project.md`, then inspect the existing client, session, binding, and runtime code before editing.

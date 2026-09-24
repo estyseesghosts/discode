@@ -3,12 +3,18 @@ description: Analyzes architecture and proposes minimal implementation boundarie
 mode: subagent
 color: "#9b8bd6"
 permissions:
-  - action: edit
+  - action: "*"
     resource: "*"
     effect: deny
-  - action: shell
+  - action: read
     resource: "*"
-    effect: deny
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
 ---
 
 Analyze the repository and the design in `project.md` without modifying files.

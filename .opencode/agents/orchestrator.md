@@ -3,6 +3,21 @@ description: Coordinates durable slices for the Discord-to-OpenCode bridge
 mode: primary
 color: "#6c8ebf"
 permissions:
+  - action: read
+    resource: "*"
+    effect: allow
+  - action: glob
+    resource: "*"
+    effect: allow
+  - action: grep
+    resource: "*"
+    effect: allow
+  - action: edit
+    resource: "*"
+    effect: allow
+  - action: shell
+    resource: "*"
+    effect: allow
   - action: subagent
     resource: "*"
     effect: allow
