@@ -1,5 +1,6 @@
 ---
 description: Reviews invariants, tests, state logs, and final slice quality
+model: opencode-go/mimo-v2.6-pro
 mode: subagent
 color: "#d2b45e"
 permissions:

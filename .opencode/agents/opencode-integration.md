@@ -1,5 +1,6 @@
 ---
 description: Implements the shared OpenCode client and event pipeline
+model: opencode-go/muse-spark-1.3-contributor#high
 mode: subagent
 color: "#65b995"
 permissions:

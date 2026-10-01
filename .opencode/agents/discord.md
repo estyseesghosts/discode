@@ -1,5 +1,6 @@
 ---
 description: Implements and reviews Discord command and message-routing behavior
+model: opencode-go/muse-spark-1.3-contributor#medium
 mode: subagent
 color: "#e58f65"
 permissions:

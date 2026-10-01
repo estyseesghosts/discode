@@ -1,5 +1,6 @@
 ---
 description: Analyzes architecture and proposes minimal implementation boundaries
+model: opencode-go/mimo-v2.6-pro
 mode: subagent
 color: "#9b8bd6"
 permissions:
